@@ -57,11 +57,12 @@ def get_players(table_name: str, proxies: Series, connection: Connection):
 
     print('Adding players to database...')
     with Pool(250) as p:
-        dfs = p.map(partial(get_players_helper, proxies=proxies), player_ids)
+        results_iterator = p.imap_unordered(partial(get_players_helper, proxies=proxies), player_ids)
+        dfs = list(tqdm(results_iterator, total=len(player_ids)))
     dfs = [df for df in dfs if df is not None]
     dfs = concat(dfs, ignore_index=True).reset_index(drop=True)
     try:
-        print("\n Validating player rows against schema...")
+        print("Validating player rows against schema...")
         dfs = PlayerSchema.validate(dfs, lazy=True)
     except SchemaErrors as err:
         print("Schema validation failed for players")

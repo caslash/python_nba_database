@@ -25,7 +25,7 @@ def create_player_table(cursor: Cursor):
         height TEXT,
         weight TEXT,
         season_exp INTEGER,
-        jersey INTEGER,
+        jersey TEXT,
         position TEXT,
         team_history TEXT,
         is_active BOOLEAN,
