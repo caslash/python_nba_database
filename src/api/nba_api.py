@@ -1,4 +1,5 @@
 from multiprocessing import Pool
+from tqdm import tqdm
 
 from nba_api.stats.static import players
 from nba_api.stats.endpoints.commonplayerinfo import CommonPlayerInfo
@@ -38,6 +39,8 @@ def get_players_helper(player_id: str, proxies: Series):
             df['team_history'] = [team_string]
             df['total_games_played'] = [games_played]
 
+            df = df.drop(columns=['PERSON_ID', 'DISPLAY_LAST_COMMA_FIRST', 'PLAYER_SLUG', 'LAST_AFFILIATION', 'ROSTERSTATUS', 'TEAM_ID', 'TEAM_NAME', 'TEAM_ABBREVIATION', 'TEAM_CODE', 'TEAM_CITY', 'PLAYERCODE', 'DLEAGUE_FLAG', 'NBA_FLAG', 'GAMES_PLAYED_FLAG', 'GAMES_PLAYED_CURRENT_SEASON_FLAG', 'GREATEST_75_FLAG'])
+
             df.columns = df.columns.to_series().apply(lambda x: x.lower())
             return df
         except RequestException:
@@ -46,24 +49,26 @@ def get_players_helper(player_id: str, proxies: Series):
             return None
 
 def get_players(table_name: str, proxies: Series, connection: Connection):
-    print("Getting players...")
     players_list = players.get_players()
+
+    print(f'Found {len(players_list)} players...')
+
     player_ids = DataFrame(players_list)['id'].astype("category")
 
+    print('Adding players to database...')
     with Pool(250) as p:
         dfs = p.map(partial(get_players_helper, proxies=proxies), player_ids)
     dfs = [df for df in dfs if df is not None]
     dfs = concat(dfs, ignore_index=True).reset_index(drop=True)
     try:
-        print("Validating player rows against schema...")
-        dfs = PlayerSchema.validate(dfs, lazy=True, coerce=True, ignore_extra=True)
+        print("\n Validating player rows against schema...")
+        dfs = PlayerSchema.validate(dfs, lazy=True)
     except SchemaErrors as err:
         print("Schema validation failed for players")
         print(f"Schema errors: {err.failure_cases}")
         print(f"Invalid dataframe: {err.data}")
         return None
-    print("Successfully retrieved all players.")
-    dfs.to_sql(table_name, connection, if_exists="replace", index=False)
+    print("Successfully retrieved all players. Saving to database...")
+    dfs.to_sql(table_name, connection, if_exists="append", index=False)
+    print(f"Successfully saved players to '{table_name}' table.")
     return dfs
-
-# {'id': 1627824, 'full_name': 'Guerschon Yabusele', 'first_name': 'Guerschon', 'last_name': 'Yabusele', 'is_active': True}

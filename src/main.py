@@ -18,7 +18,6 @@ def main():
     print("Starting database update...")
 
     get_players('players', proxies, connection)
-
     # tasks = [
     #     lambda: get_players('players', proxies, connection)
     # ]

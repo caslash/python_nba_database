@@ -13,28 +13,28 @@ def create_tables(connection: Connection):
 
 def create_player_table(cursor: Cursor):
     player_query = '''
-        CREATE TABLE IF NOT EXISTS player (
+        CREATE TABLE IF NOT EXISTS players (
         id INTEGER PRIMARY KEY,
-        first_name VARCHAR,
-        last_name VARCHAR,
-        display_first_last VARCHAR,
-        display_fi_last VARCHAR,
+        first_name TEXT,
+        last_name TEXT,
+        display_first_last TEXT,
+        display_fi_last TEXT,
         birthdate TIMESTAMP,
-        school VARCHAR,
-        country VARCHAR,
-        height VARCHAR,
-        weight VARCHAR,
+        school TEXT,
+        country TEXT,
+        height TEXT,
+        weight TEXT,
         season_exp INTEGER,
         jersey INTEGER,
-        position VARCHAR,
-        team_history VARCHAR,
+        position TEXT,
+        team_history TEXT,
         is_active BOOLEAN,
         from_year INTEGER,
         to_year INTEGER,
         total_games_played INTEGER,
-        draft_round VARCHAR,
-        draft_number VARCHAR,
-        draft_year VARCHAR);
+        draft_round TEXT,
+        draft_number TEXT,
+        draft_year TEXT);
     '''
 
     cursor.execute(player_query)
