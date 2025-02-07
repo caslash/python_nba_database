@@ -18,6 +18,11 @@ from db.models import (
     PlayerAccoladesSchema
 )
 
+def get_all_player_ids() -> DataFrame:
+    players_list = players.get_players()
+    player_ids = DataFrame(players_list)['id'].astype('category')
+    return player_ids
+
 def get_players_helper(player_id: str, proxies: Series):
     while True:
         try:
@@ -50,10 +55,7 @@ def get_players_helper(player_id: str, proxies: Series):
         except ValueError:
             return None
 
-def get_players(table_name: str, proxies: Series, connection: Connection):
-    players_list = players.get_players()
-    player_ids = DataFrame(players_list)['id'].astype("category")
-
+def get_players(player_ids: DataFrame, table_name: str, proxies: Series, connection: Connection):
     print('Adding players to database...')
     with Pool(250) as p:
         results_iterator = p.imap_unordered(partial(get_players_helper, proxies=proxies), player_ids)
@@ -90,10 +92,7 @@ def get_player_accolades_helper(player_id: str, proxies: Series):
         except ValueError:
             return None
 
-def get_player_accolades(table_name: str, proxies: Series, connection: Connection):
-    players_list = players.get_players()
-    player_ids = DataFrame(players_list)['id'].astype("category")
-
+def get_player_accolades(player_ids: DataFrame, table_name: str, proxies: Series, connection: Connection):
     print('Adding player accolades to database...')
     with Pool(250) as p:
         results_iterator = p.imap_unordered(partial(get_player_accolades_helper, proxies=proxies), player_ids)

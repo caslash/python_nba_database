@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from api.proxies import get_proxies
 from api.nba_api import (
+    get_all_player_ids,
     get_players,
     get_player_accolades
 )
@@ -22,13 +23,10 @@ def main():
 
     print("Starting database update...")
 
-    tasks = [
-        lambda: get_players('player', proxies, connection),
-        lambda: get_player_accolades('player_accolades', proxies, connection)
-    ]
+    players = get_all_player_ids()
 
-    with ThreadPoolExecutor() as executor:
-        executor.map(lambda task: task(), tasks)
+    get_players(players, 'player', proxies, connection),
+    get_player_accolades(players, 'player_accolades', proxies, connection)
 
     connection.commit()
     connection.close()
