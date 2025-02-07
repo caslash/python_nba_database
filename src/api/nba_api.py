@@ -4,6 +4,7 @@ from tqdm import tqdm
 from nba_api.stats.static import players
 from nba_api.stats.endpoints.commonplayerinfo import CommonPlayerInfo
 from nba_api.stats.endpoints.playerprofilev2 import PlayerProfileV2
+from nba_api.stats.endpoints.playerawards import PlayerAwards
 
 from numpy import random
 from pandas import concat, Series, DataFrame
@@ -13,7 +14,8 @@ from requests.exceptions import RequestException
 from pandera.errors import SchemaErrors
 
 from db.models import (
-    PlayerSchema
+    PlayerSchema,
+    PlayerAccoladesSchema
 )
 
 def get_players_helper(player_id: str, proxies: Series):
@@ -50,15 +52,12 @@ def get_players_helper(player_id: str, proxies: Series):
 
 def get_players(table_name: str, proxies: Series, connection: Connection):
     players_list = players.get_players()
-
-    print(f'Found {len(players_list)} players...')
-
     player_ids = DataFrame(players_list)['id'].astype("category")
 
     print('Adding players to database...')
     with Pool(250) as p:
         results_iterator = p.imap_unordered(partial(get_players_helper, proxies=proxies), player_ids)
-        dfs = list(tqdm(results_iterator, total=len(player_ids)))
+        dfs = list(tqdm(results_iterator, total=len(player_ids), unit='player', desc='Loading players...', colour='red'))
     dfs = [df for df in dfs if df is not None]
     dfs = concat(dfs, ignore_index=True).reset_index(drop=True)
     try:
@@ -72,4 +71,44 @@ def get_players(table_name: str, proxies: Series, connection: Connection):
     print("Successfully retrieved all players. Saving to database...")
     dfs.to_sql(table_name, connection, if_exists="append", index=False)
     print(f"Successfully saved players to '{table_name}' table.")
+    return dfs
+
+def get_player_accolades_helper(player_id: str, proxies: Series):
+    while True:
+        try:
+            selected_proxy = random.choice(proxies)
+
+            df = DataFrame([player_id], columns=['player_id'])
+
+            player_awards = PlayerAwards(player_id=player_id, proxy=selected_proxy, timeout=3).get_normalized_json()
+            df['accolades_object'] = [str(player_awards)]
+
+            df.columns = df.columns.to_series().apply(lambda x: x.lower())
+            return df
+        except RequestException:
+            continue
+        except ValueError:
+            return None
+
+def get_player_accolades(table_name: str, proxies: Series, connection: Connection):
+    players_list = players.get_players()
+    player_ids = DataFrame(players_list)['id'].astype("category")
+
+    print('Adding player accolades to database...')
+    with Pool(250) as p:
+        results_iterator = p.imap_unordered(partial(get_player_accolades_helper, proxies=proxies), player_ids)
+        dfs = list(tqdm(results_iterator, total=len(player_ids), unit='player', desc="Loading player accolades...", colour='green'))
+    dfs = [df for df in dfs if df is not None]
+    dfs = concat(dfs, ignore_index=True).reset_index(drop=True)
+    try:
+        print("Validating player accolade rows against schema...")
+        dfs = PlayerAccoladesSchema.validate(dfs, lazy=True)
+    except SchemaErrors as err:
+        print("Schema validation failed for player accolades")
+        print(f"Schema errors: {err.failure_cases}")
+        print(f"Invalid dataframe: {err.data}")
+        return None
+    print("Successfully retrieved all player accolades. Saving to database...")
+    dfs.to_sql(table_name, connection, if_exists="append", index=False)
+    print(f"Successfully saved player accolades to '{table_name}' table.")
     return dfs

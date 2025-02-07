@@ -8,12 +8,13 @@ def create_tables(connection: Connection):
     cursor = connection.cursor()
 
     create_player_table(cursor)
+    create_player_accolades_table(cursor)
 
     connection.commit()
 
 def create_player_table(cursor: Cursor):
     player_query = '''
-        CREATE TABLE IF NOT EXISTS players (
+        CREATE TABLE IF NOT EXISTS player (
         id INTEGER PRIMARY KEY,
         first_name TEXT,
         last_name TEXT,
@@ -38,4 +39,15 @@ def create_player_table(cursor: Cursor):
     '''
 
     cursor.execute(player_query)
-    print("Table 'player' created successfully...")
+    print("Table 'player' created successfully.")
+
+def create_player_accolades_table(cursor: Cursor):
+    player_accolades_query = '''
+        CREATE TABLE IF NOT EXISTS player_accolades (
+        player_id INTEGER,
+        accolades_object TEXT,
+        FOREIGN KEY(player_id) REFERENCES players(id));
+    '''
+
+    cursor.execute(player_accolades_query)
+    print("Table 'player_accolades' created successfully.")

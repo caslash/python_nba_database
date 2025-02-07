@@ -3,7 +3,7 @@ from pandera import DataFrameModel
 from pandera.typing import Series, Bool, String, Int, DateTime
 
 class PlayerSchema(DataFrameModel):
-    id: Series[String] = pa.Field(nullable=False)
+    id: Series[Int] = pa.Field(nullable=False)
     first_name: Series[String] = pa.Field(nullable=False)
     last_name: Series[String] = pa.Field(nullable=False)
     display_first_last: Series[String] = pa.Field(nullable=True)
@@ -24,6 +24,13 @@ class PlayerSchema(DataFrameModel):
     draft_number: Series[String] = pa.Field(nullable=True)
     draft_year: Series[String] = pa.Field(nullable=True)
     is_active: Series[Bool] = pa.Field(nullable=True)
+
+    class Config:
+        coerce = True
+
+class PlayerAccoladesSchema(DataFrameModel):
+    player_id: Series[Int] = pa.Field(nullable=False)
+    accolades_object: Series[String] = pa.Field(nullable=True)
 
     class Config:
         coerce = True

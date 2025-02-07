@@ -1,7 +1,9 @@
 from multiprocessing import Pool
+from tqdm import tqdm
 
 from pandas import Series, read_csv, concat
 from requests import get
+from functools import partial
 
 def check_proxy(proxy):
     try:
@@ -37,7 +39,8 @@ def get_proxies():
     proxies = [p for sublist in proxies for p in sublist]
     print(f"Found {len(proxies)} proxies. Checking proxies...")
     with Pool(250) as p:
-        proxies = p.map(check_proxy, proxies)
+        proxies_iterator = p.imap_unordered(partial(check_proxy), proxies)
+        proxies = list(tqdm(proxies_iterator, total=len(proxies), unit='proxy', leave=False, desc='Checking proxies...'))
     proxies = Series(proxies).dropna().tolist()
     print(f"Found {len(proxies)} valid proxies. Returning proxies...")
     return proxies
