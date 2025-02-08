@@ -41,7 +41,7 @@ def get_players_helper(player_id: str, proxies: Series):
             team_string = ','.join([str(id) for id in unique_team_ids])
             games_played = only_nba_df['GP'].sum()
 
-            df['id'] = [int(player_id)]
+            df['id'] = [player_id]
             df['is_active'] = df['ROSTERSTATUS'].transform(lambda status: True if status == "Active" else False)
             df['team_history'] = [team_string]
             df['total_games_played'] = [games_played]
@@ -58,7 +58,7 @@ def get_players_helper(player_id: str, proxies: Series):
 def get_players(player_ids: DataFrame, table_name: str, proxies: Series, connection: Connection):
     print('Adding players to database...')
     with Pool(250) as p:
-        results_iterator = p.imap_unordered(partial(get_players_helper, proxies=proxies), player_ids)
+        results_iterator = p.imap_unordered(partial(get_players_helper, proxies=proxies), player_ids, chunksize=10)
         dfs = list(tqdm(results_iterator, total=len(player_ids), unit='player', desc='Loading players...', colour='red'))
     dfs = [df for df in dfs if df is not None]
     dfs = concat(dfs, ignore_index=True).reset_index(drop=True)
@@ -72,7 +72,7 @@ def get_players(player_ids: DataFrame, table_name: str, proxies: Series, connect
         return None
     print("Successfully retrieved all players. Saving to database...")
     dfs.to_sql(table_name, connection, if_exists="append", index=False)
-    print(f"Successfully saved players to '{table_name}' table.")
+    print(f"Successfully saved {len(dfs)} players to '{table_name}' table.")
     return dfs
 
 def get_player_accolades_helper(player_id: str, proxies: Series):
@@ -109,5 +109,5 @@ def get_player_accolades(player_ids: DataFrame, table_name: str, proxies: Series
         return None
     print("Successfully retrieved all player accolades. Saving to database...")
     dfs.to_sql(table_name, connection, if_exists="append", index=False)
-    print(f"Successfully saved player accolades to '{table_name}' table.")
+    print(f"Successfully saved {len(dfs)} players' accolades to '{table_name}' table.")
     return dfs
