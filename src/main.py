@@ -25,7 +25,7 @@ def main():
 
     players = get_all_player_ids()
 
-    get_players(players, 'player', proxies, connection),
+    get_players(players, 'player', proxies, connection)
     get_player_accolades(players, 'player_accolades', proxies, connection)
 
     connection.commit()

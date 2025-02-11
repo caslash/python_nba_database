@@ -43,10 +43,10 @@ def create_player_table(cursor: Cursor):
 
 def create_player_accolades_table(cursor: Cursor):
     player_accolades_query = '''
-        CREATE TABLE IF NOT EXISTS player_accolades (
-        player_id INTEGER,
+        CREATE TABLE IF NOT EXISTS new_player_accolades (
+        player_id INTEGER PRIMARY KEY,
         accolades_object TEXT,
-        FOREIGN KEY(player_id) REFERENCES players(id));
+        FOREIGN KEY(player_id) REFERENCES player(id));
     '''
 
     cursor.execute(player_accolades_query)
